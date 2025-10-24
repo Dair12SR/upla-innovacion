@@ -10,17 +10,17 @@ const fs = require('fs');
 
 const app = express();
 
-// Middleware
+// ✅ Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-// Crear carpeta uploads si no existe
+// ✅ Crear carpeta uploads si no existe
 if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads');
 }
 
-// Configuración de multer para subir archivos
+// ✅ Configuración de multer para subir archivos
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -42,19 +42,19 @@ const upload = multer({
     }
 });
 
-// ✅ Configuración de la base de datos PostgreSQL en Azure CON VARIABLES DE ENTORNO
+// ✅ Configuración de PostgreSQL con variables de entorno
 const pool = new Pool({
     user: process.env.DATABASE_USER || 'adminupla',
     host: process.env.DATABASE_HOST || 'upla-innovacion-db.postgres.database.azure.com',
     database: process.env.DATABASE_NAME || 'postgres',
     password: process.env.DATABASE_PASSWORD || 'UplaInnovacion2025!',
-    port: process.env.DATABASE_PORT || 5432,
+    port: parseInt(process.env.DATABASE_PORT || '5432'),
     ssl: {
         rejectUnauthorized: false
     }
 });
 
-// Verificar conexión
+// ✅ Verificar conexión a la base de datos
 pool.connect((err, client, release) => {
     if (err) {
         console.error('❌ Error al conectar a la base de datos:', err.stack);
@@ -64,12 +64,16 @@ pool.connect((err, client, release) => {
     }
 });
 
-// ==================== RUTAS ====================
+// ==================== RUTAS API ====================
 
-// Login
+// ✅ Login
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: 'Email y contraseña son requeridos' });
+        }
         
         const result = await pool.query(
             'SELECT * FROM users WHERE email = $1',
@@ -84,9 +88,8 @@ app.post('/api/login', async (req, res) => {
         
         // Si NO tiene password en la base de datos, usar password plana temporalmente
         if (!user.password || user.password === null) {
-            // Comparación temporal directa (solo para desarrollo)
             if (password === '123456') {
-                res.json({ 
+                return res.json({ 
                     success: true, 
                     user: { 
                         id: user.id, 
@@ -94,7 +97,7 @@ app.post('/api/login', async (req, res) => {
                     } 
                 });
             } else {
-                res.json({ success: false, message: 'Contraseña incorrecta' });
+                return res.json({ success: false, message: 'Contraseña incorrecta' });
             }
         } else {
             // Verificar contraseña con bcrypt
@@ -104,7 +107,7 @@ app.post('/api/login', async (req, res) => {
                 return res.json({ success: false, message: 'Contraseña incorrecta' });
             }
 
-            res.json({ 
+            return res.json({ 
                 success: true, 
                 user: { 
                     id: user.id, 
@@ -118,7 +121,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// ✅ Obtener todos los proyectos CON ESTADO DE EVALUACIÓN
+// ✅ Obtener todos los proyectos con estado de evaluación
 app.get('/api/projects', async (req, res) => {
     try {
         const query = `
@@ -138,7 +141,7 @@ app.get('/api/projects', async (req, res) => {
     }
 });
 
-// ✅ Obtener UN proyecto por ID CON ESTADO DE EVALUACIÓN
+// ✅ Obtener UN proyecto por ID con estado de evaluación
 app.get('/api/projects/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -164,7 +167,7 @@ app.get('/api/projects/:id', async (req, res) => {
     }
 });
 
-// Crear nuevo proyecto
+// ✅ Crear nuevo proyecto
 app.post('/api/projects', upload.single('file'), async (req, res) => {
     try {
         const {
@@ -192,26 +195,31 @@ app.post('/api/projects', upload.single('file'), async (req, res) => {
             project_summary, fileUrl, user_id
         ]);
 
-        res.json(result.rows[0]);
+        res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error('Error al crear proyecto:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Eliminar proyecto
+// ✅ Eliminar proyecto
 app.delete('/api/projects/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        await pool.query('DELETE FROM projects WHERE id = $1', [id]);
-        res.json({ success: true });
+        const result = await pool.query('DELETE FROM projects WHERE id = $1 RETURNING *', [id]);
+        
+        if (result.rows.length > 0) {
+            res.json({ success: true, message: 'Proyecto eliminado' });
+        } else {
+            res.status(404).json({ success: false, message: 'Proyecto no encontrado' });
+        }
     } catch (error) {
         console.error('Error al eliminar proyecto:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Guardar evaluación
+// ✅ Guardar o actualizar evaluación
 app.post('/api/evaluations', async (req, res) => {
     try {
         const {
@@ -247,7 +255,7 @@ app.post('/api/evaluations', async (req, res) => {
             final_recommendations, total_score, evaluator_id
         ]);
 
-        res.json(result.rows[0]);
+        res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error('Error al guardar evaluación:', error);
         res.status(500).json({ error: error.message });
@@ -274,9 +282,16 @@ app.get('/api/evaluations/:projectId', async (req, res) => {
     }
 });
 
+// ✅ Ruta de health check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'OK', message: 'Servidor funcionando correctamente' });
+});
+
 // ✅ Puerto dinámico para producción
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor backend corriendo en puerto ${PORT}`);
+    console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
+
