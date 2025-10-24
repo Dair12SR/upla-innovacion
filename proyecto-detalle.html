@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Proyecto</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="project-detail-container">
+        <!-- Header con nombre y puntaje -->
+        <div class="detail-header">
+            <h1 id="project-name">Cargando...</h1>
+            <div class="score-badge" id="score-badge" style="display: none;">
+                <p class="score-label">PUNTUACIÓN TOTAL</p>
+                <h2 class="score-value" id="score-value">0</h2>
+                <p class="score-total">/ 100 PUNTOS</p>
+            </div>
+        </div>
+
+        <!-- Información del proyecto -->
+        <div class="info-card">
+            <h2>📋 Información del Proyecto</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Tipo de Proyecto:</strong>
+                    <span id="project-type"></span>
+                </div>
+                <div class="info-item">
+                    <strong>Investigadores:</strong>
+                    <span id="project-researchers"></span>
+                </div>
+                <div class="info-item">
+                    <strong>Programa de Estudio:</strong>
+                    <span id="project-program"></span>
+                </div>
+                <div class="info-item">
+                    <strong>Línea de Investigación:</strong>
+                    <span id="project-line"></span>
+                </div>
+                <div class="info-item">
+                    <strong>Correo de Contacto:</strong>
+                    <span id="project-email"></span>
+                </div>
+                <div class="info-item">
+                    <strong>Información General:</strong>
+                    <span id="project-info"></span>
+                </div>
+                <div class="info-item">
+                    <strong>Problemática:</strong>
+                    <span id="project-problem"></span>
+                </div>
+                <div class="info-item">
+                    <strong>Marco Teórico:</strong>
+                    <span id="project-theory"></span>
+                </div>
+                <div class="info-item">
+                    <strong>Resumen:</strong>
+                    <span id="project-summary"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documento -->
+        <div class="document-card" id="document-card" style="display: none;">
+            <div class="document-info">
+                <span class="document-icon">📄</span>
+                <div>
+                    <h3>Documento del Proyecto</h3>
+                    <p>PDF adjunto</p>
+                </div>
+            </div>
+            <div class="document-actions">
+                <a id="download-btn" class="btn-download" download>⬇️ Descargar</a>
+                <a id="view-btn" class="btn-view" target="_blank">👁️ Ver</a>
+            </div>
+        </div>
+
+        <!-- Botón para evaluar -->
+        <button onclick="openEvaluationModal()" class="btn-evaluate-large">⭐ Evaluar Proyecto</button>
+        <button onclick="goBack()" class="btn-back">← Volver</button>
+    </div>
+
+    <script>
+        let currentProject = null;
+
+        // Obtener ID del proyecto de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const projectId = urlParams.get('id');
+
+        // Cargar proyecto
+        async function loadProject() {
+            try {
+                const response = await fetch(`http://upla-innovacion-backend.azurewebsites.net/${projectId}`);
+                const project = await response.json();
+                currentProject = project;
+
+                // Llenar información
+                document.getElementById('project-name').textContent = project.name;
+                document.getElementById('project-type').textContent = project.type;
+                document.getElementById('project-researchers').textContent = project.researchers;
+                document.getElementById('project-program').textContent = project.study_program;
+                document.getElementById('project-line').textContent = project.research_line;
+                document.getElementById('project-email').textContent = project.contact_email;
+                document.getElementById('project-info').textContent = project.general_info;
+                document.getElementById('project-problem').textContent = project.problem_description;
+                document.getElementById('project-theory').textContent = project.theoretical_framework;
+                document.getElementById('project-summary').textContent = project.project_summary;
+
+                // Mostrar puntaje si existe evaluación
+                if (project.has_evaluation && project.total_score) {
+                    document.getElementById('score-badge').style.display = 'block';
+                    document.getElementById('score-value').textContent = Math.round(project.total_score * (100/55)); // Convertir de 55 a 100
+                }
+
+                // Mostrar documento si existe
+                if (project.file_url) {
+                    document.getElementById('document-card').style.display = 'flex';
+                    document.getElementById('download-btn').href = `http://upla-innovacion-backend.azurewebsites.net${project.file_url}`;
+                    document.getElementById('view-btn').href = `http://upla-innovacion-backend.azurewebsites.net${project.file_url}`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar el proyecto');
+            }
+        }
+
+        function openEvaluationModal() {
+            // Guardar proyecto en localStorage y redirigir al dashboard con modal abierto
+            localStorage.setItem('evaluateProject', JSON.stringify(currentProject));
+            window.location.href = 'index.html';
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        // Cargar al inicio
+        loadProject();
+    </script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Investigación e Innovación</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <!-- SECCIÓN LOGIN -->
+    <div id="login-section">
+        <div class="login-container">
+            <div class="logo-container">
+                <img src="logo-upla.png" alt="Logo UPLA" class="logo">
+                <h1>Sistema de Investigación e Innovación</h1>
+            </div>
+            <form id="login-form">
+                <label>Correo Institucional</label>
+                <input type="email" id="email" placeholder="usuario@upla.edu.pe" required>
+                
+                <label>Contraseña</label>
+                <input type="password" id="password" placeholder="Ingrese su contraseña" required>
+                
+                <button type="submit">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DASHBOARD (OCULTA INICIALMENTE) -->
+    <div id="dashboard-section" style="display: none;">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <img src="logo-upla.png" alt="Logo" class="header-logo">
+                <h2>Sistema de Investigación</h2>
+            </div>
+            <div class="header-right">
+                <span id="user-email"></span>
+                <button onclick="logout()" class="btn-logout">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <!-- Contenido principal -->
+        <main class="dashboard-main">
+            <!-- Barra de búsqueda y filtros -->
+            <div class="toolbar">
+                <input type="text" id="search-input" placeholder="Buscar proyectos..." onkeyup="searchProjects()">
+                <select onchange="filterByCategory(this.value)">
+                    <option value="todos">Todas las categorías</option>
+                    <option value="Investigación Formativa">Investigación Formativa</option>
+                    <option value="Investigación Aplicada">Investigación Aplicada</option>
+                    <option value="Innovación Tecnológica">Innovación Tecnológica</option>
+                </select>
+                <button onclick="openNewProjectModal()" class="btn-add">➕ Nuevo Proyecto</button>
+            </div>
+
+            <!-- Lista de proyectos -->
+            <div id="projects-container" class="projects-grid">
+                <p class="loading">Cargando proyectos...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: NUEVO PROYECTO -->
+    <div id="new-project-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Nuevo Proyecto</h2>
+                <button onclick="closeNewProjectModal()" class="btn-close">✖</button>
+            </div>
+            <form id="new-project-form">
+                <label>Categoría *</label>
+                <select name="category" required>
+                    <option value="">Seleccione...</option>
+                    <option value="Investigación Formativa">Investigación Formativa</option>
+                    <option value="Investigación Aplicada">Investigación Aplicada</option>
+                    <option value="Innovación Tecnológica">Innovación Tecnológica</option>
+                </select>
+
+                <label>Nombre del Proyecto *</label>
+                <input type="text" name="name" required>
+
+                <label>Tipo *</label>
+                <select name="type" required>
+                    <option value="">Seleccione...</option>
+                    <option value="Tesis">Tesis</option>
+                    <option value="Artículo">Artículo</option>
+                    <option value="Prototipo">Prototipo</option>
+                </select>
+
+                <label>Investigadores *</label>
+                <input type="text" name="researchers" required placeholder="Nombres separados por comas">
+
+                <label>Programa de Estudios *</label>
+                <input type="text" name="study_program" required>
+
+                <label>Línea de Investigación *</label>
+                <input type="text" name="research_line" required>
+
+                <label>Email de Contacto *</label>
+                <input type="email" name="contact_email" required>
+
+                <label>Información General *</label>
+                <textarea name="general_info" rows="3" required></textarea>
+
+                <label>Descripción del Problema *</label>
+                <textarea name="problem_description" rows="3" required></textarea>
+
+                <label>Marco Teórico *</label>
+                <textarea name="theoretical_framework" rows="3" required></textarea>
+
+                <label>Resumen del Proyecto *</label>
+                <textarea name="project_summary" rows="3" required></textarea>
+
+                <label>Archivo Adjunto (PDF)</label>
+                <input type="file" name="file" accept=".pdf">
+
+                <button type="submit" class="btn-submit">Guardar Proyecto</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: EVALUACIÓN DE PROYECTO -->
+    <div id="evaluation-modal" class="modal" style="display: none;">
+        <div class="modal-content evaluation-modal">
+            <div class="modal-header">
+                <h2>Evaluación de Proyecto</h2>
+                <button onclick="closeEvaluationModal()" class="btn-close">✖</button>
+            </div>
+            <div id="evaluation-project-info" class="evaluation-info"></div>
+            
+            <form id="evaluation-form">
+                <input type="hidden" name="project_id" id="eval-project-id">
+                
+                <!-- Criterio 1 -->
+                <div class="evaluation-section">
+                    <h3>1. Pertinencia y Relevancia (Máx 20 pts)</h3>
+                    <div class="eval-item">
+                        <label>1.1 Coherencia con objetivos institucionales (4 pts)</label>
+                        <input type="number" name="eval1_1" step="0.01" min="0" max="4" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>1.2 Relevancia del problema (4 pts)</label>
+                        <input type="number" name="eval1_2" step="0.01" min="0" max="4" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>1.3 Impacto potencial (4 pts)</label>
+                        <input type="number" name="eval1_3" step="0.01" min="0" max="4" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>1.4 Innovación propuesta (4 pts)</label>
+                        <input type="number" name="eval1_4" step="0.01" min="0" max="4" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>1.5 Viabilidad (4 pts)</label>
+                        <input type="number" name="eval1_5" step="0.01" min="0" max="4" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>Observaciones:</label>
+                        <textarea name="obs1" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Criterio 2 -->
+                <div class="evaluation-section">
+                    <h3>2. Marco Teórico (Máx 15 pts)</h3>
+                    <div class="eval-item">
+                        <label>2.1 Fundamentación teórica (5 pts)</label>
+                        <input type="number" name="eval2_1" step="0.01" min="0" max="5" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>2.2 Actualidad de referencias (5 pts)</label>
+                        <input type="number" name="eval2_2" step="0.01" min="0" max="5" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>2.3 Coherencia teórica (5 pts)</label>
+                        <input type="number" name="eval2_3" step="0.01" min="0" max="5" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>Observaciones:</label>
+                        <textarea name="obs2" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Criterio 3 -->
+                <div class="evaluation-section">
+                    <h3>3. Metodología (Máx 20 pts)</h3>
+                    <div class="eval-item">
+                        <label>3.1 Diseño metodológico (5 pts)</label>
+                        <input type="number" name="eval3_1" step="0.01" min="0" max="5" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>3.2 Técnicas e instrumentos (5 pts)</label>
+                        <input type="number" name="eval3_2" step="0.01" min="0" max="5" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>3.3 Población y muestra (5 pts)</label>
+                        <input type="number" name="eval3_3" step="0.01" min="0" max="5" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>3.4 Plan de análisis (5 pts)</label>
+                        <input type="number" name="eval3_4" step="0.01" min="0" max="5" required>
+                    </div>
+                    <div class="eval-item">
+                        <label>Observaciones:</label>
+                        <textarea name="obs3" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Total -->
+                <div class="evaluation-total">
+                    <h3>Puntaje Total: <span id="total-score">0.00</span> / 55 pts</h3>
+                </div>
+
+                <div class="eval-item">
+                    <label>Recomendaciones Finales:</label>
+                    <textarea name="final_recommendations" rows="3" required></textarea>
+                </div>
+
+                <div class="evaluation-buttons">
+                    <button type="button" onclick="calculateTotal()" class="btn-calculate">🧮 Calcular Puntaje</button>
+                    <button type="button" onclick="exportToPDF()" class="btn-pdf">📄 Exportar a PDF</button>
+                    <button type="submit" class="btn-submit">💾 Guardar Evaluación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
